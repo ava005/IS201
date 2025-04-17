@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bakery Accounting Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff8f0;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #f8c291;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      color: #6d4c41;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .scenario {
+      display: none;
+    }
+
+    .scenario.active {
+      display: block;
+    }
+
+    .answer {
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background-color: #ffab91;
+      color: #4e342e;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #ff8a65;
+    }
+
+    .result {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+
+    .breakpoint {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    🍞 Bakery Accounting Adventure 🍰
+  </header>
+  <main>
+    <div id="game"></div>
+  </main>
+
+  <script>
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    const scenarios = [];
+
+    const baseScenarios = [
+      {
+        title: "Starting Capital",
+        question: "You invest $5,000 of your own money to start the bakery. What is the correct journal entry?",
+        options: [
+          { text: "Debit Cash $5,000, Credit Owner's Capital $5,000", correct: true },
+          { text: "Debit Owner's Equity $5,000, Credit Cash $5,000", correct: false },
+          { text: "Debit Revenue $5,000, Credit Cash $5,000", correct: false }
+        ]
+      },
+      {
+        title: "Rent Payment",
+        question: "You pay $1,000 in cash for the first month's rent. What is the correct journal entry?",
+        options: [
+          { text: "Debit Rent Expense $1,000, Credit Cash $1,000", correct: true },
+          { text: "Debit Prepaid Rent $1,000, Credit Cash $1,000", correct: false },
+          { text: "Debit Building $1,000, Credit Cash $1,000", correct: false }
+        ]
+      },
+      {
+        title: "Buying Equipment",
+        question: "You purchase baking equipment for $2,500 on credit. What is the journal entry?",
+        options: [
+          { text: "Debit Equipment $2,500, Credit Accounts Payable $2,500", correct: true },
+          { text: "Debit Supplies $2,500, Credit Cash $2,500", correct: false },
+          { text: "Debit Accounts Payable $2,500, Credit Equipment $2,500", correct: false }
+        ]
+      },
+      {
+        title: "Buying Ingredients",
+        question: "You buy flour, sugar, and eggs for $300 cash. What is the journal entry?",
+        options: [
+          { text: "Debit Supplies $300, Credit Cash $300", correct: true },
+          { text: "Debit Inventory $300, Credit Revenue $300", correct: false },
+          { text: "Debit Cash $300, Credit Accounts Payable $300", correct: false }
+        ]
+      },
+      {
+        title: "Selling Angel Cakes",
+        question: "You sell one Angel Cake for $20. Ingredient cost was $5. What are the journal entries?",
+        options: [
+          { text: "Debit Cash $20, Credit Revenue $20 AND Debit COGS $5, Credit Supplies $5", correct: true },
+          { text: "Debit Revenue $20, Credit Cash $20", correct: false },
+          { text: "Debit Inventory $5, Credit COGS $5", correct: false }
+        ]
+      }
+    ];
+
+    const breakpoints = [
+      {
+        type: "breakpoint",
+        title: "🍽️ Bakery Break Point: Time to Expand!",
+        question: "What would you like to add to your bakery?",
+        options: [
+          { text: "Add a New Dessert: 'Berry Tart' (Price: $25)", correct: true },
+          { text: "Buy a Display Fridge ($1,200)", correct: true },
+          { text: "Hire a Part-Time Baker ($600/month)", correct: true }
+        ]
+      },
+      {
+        type: "breakpoint",
+        title: "🍽️ Bakery Break Point: Time to Expand Again!",
+        question: "Choose your next upgrade:",
+        options: [
+          { text: "Add a New Dessert: 'Chocolate Eclair' (Price: $30)", correct: true },
+          { text: "Upgrade Oven ($2,000)", correct: true },
+          { text: "Hire a Marketing Assistant ($500/month)", correct: true }
+        ]
+      }
+    ];
+
+    const extraQuestions = [
+      {
+        title: "Job Costing",
+        question: "You receive a custom cake order. Labor is $30, ingredients $20, and overhead is $10. What's the total job cost?",
+        options: [
+          { text: "$60", correct: true },
+          { text: "$50", correct: false },
+          { text: "$40", correct: false }
+        ]
+      },
+      {
+        title: "Standard Costing",
+        question: "Standard cost for flour is $2/lb. You used 60 lbs at $2.20/lb. What is the material price variance?",
+        options: [
+          { text: "$12 Unfavorable", correct: true },
+          { text: "$12 Favorable", correct: false },
+          { text: "$120 Unfavorable", correct: false }
+        ]
+      },
+      {
+        title: "Overhead Variance",
+        question: "Your actual overhead costs are $1,200. The standard overhead applied was $1,000. What is the overhead variance?",
+        options: [
+          { text: "$200 Unfavorable", correct: true },
+          { text: "$200 Favorable", correct: false },
+          { text: "$2,200 Unfavorable", correct: false }
+        ]
+      },
+      {
+        title: "Cost Behavior",
+        question: "Which of these is a fixed cost in your bakery?",
+        options: [
+          { text: "Monthly Rent", correct: true },
+          { text: "Cost of flour per cake", correct: false },
+          { text: "Electricity bill based on hours", correct: false }
+        ]
+      },
+      {
+        title: "CVP Analysis",
+        question: "You sell Angel Cake for $20. Variable cost is $8. Fixed costs are $1,200. What is the break-even point in units?",
+        options: [
+          { text: "100", correct: true },
+          { text: "60", correct: false },
+          { text: "150", correct: false }
+        ]
+      }
+    ];
+
+    // Build scenario set with breakpoints every 5 questions
+    let allQuestions = [...baseScenarios, ...extraQuestions];
+    let questionCounter = 0;
+    for (let i = 0; i < allQuestions.length; i++) {
+      if (questionCounter === 5) {
+        scenarios.push(breakpoints.shift());
+        questionCounter = 0;
+      }
+      allQuestions[i].options = shuffleArray(allQuestions[i].options);
+      scenarios.push(allQuestions[i]);
+      questionCounter++;
+    }
+
+    let currentScenario = 0;
+
+    function renderScenario() {
+      const gameDiv = document.getElementById("game");
+      const scenario = scenarios[currentScenario];
+
+      if (!scenario) {
+        gameDiv.innerHTML = "<h2>🎉 You've finished the bakery adventure! 🎂</h2>";
+        return;
+      }
+
+      if (scenario.type === "breakpoint") {
+        let html = `<div class="scenario active breakpoint">
+                      <h2>${scenario.title}</h2>
+                      <p>${scenario.question}</p>`;
+        scenario.options.forEach((option, index) => {
+          html += `<div class="answer">
+                      <label><input type="radio" name="q${currentScenario}" value="${index}" /> ${option.text}</label>
+                   </div>`;
+        });
+        html += `<button onclick="chooseBreakpoint(${currentScenario})">Choose</button>
+                 <div class="result" id="result${currentScenario}"></div>
+                </div>`;
+        gameDiv.innerHTML = html;
+        return;
+      }
+
+      let html = `<div class="scenario active">
+                    <h2>${scenario.title}</h2>
+                    <p>${scenario.question}</p>`;
+      scenario.options.forEach((option, index) => {
+        html += `<div class="answer">
+                    <label><input type="radio" name="q${currentScenario}" value="${option.correct}" /> ${option.text}</label>
+                 </div>`;
+      });
+      html += `<button onclick="checkAnswer(${currentScenario})">Submit</button>
+               <div class="result" id="result${currentScenario}"></div>
+              </div>`;
+      gameDiv.innerHTML = html;
+    }
+
+    function checkAnswer(scenarioIndex) {
+      const options = document.getElementsByName(`q${scenarioIndex}`);
+      let selectedValue;
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].checked) {
+          selectedValue = options[i].value;
+          break;
+        }
+      }
+      const result = document.getElementById(`result${scenarioIndex}`);
+      if (!selectedValue) {
+        result.textContent = "Please select an answer.";
+        result.style.color = "orange";
+        return;
+      }
+      if (selectedValue === "true") {
+        result.textContent = "✅ Correct!";
+        result.style.color = "green";
+        setTimeout(() => {
+          currentScenario++;
+          renderScenario();
+        }, 1000);
+      } else {
+        result.textContent = "❌ Incorrect. Try again!";
+        result.style.color = "red";
+      }
+    }
+
+    function chooseBreakpoint(scenarioIndex) {
+      const options = document.getElementsByName(`q${scenarioIndex}`);
+      let selected = false;
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].checked) {
+          selected = true;
+          break;
+        }
+      }
+      const result = document.getElementById(`result${scenarioIndex}`);
+      if (!selected) {
+        result.textContent = "Please choose an upgrade option.";
+        result.style.color = "orange";
+        return;
+      }
+      result.textContent = "✅ Upgrade added to your bakery!";
+      result.style.color = "green";
+      setTimeout(() => {
+        currentScenario++;
+        renderScenario();
+      }, 1000);
+    }
+
+    renderScenario();
+  </script>
+</body>
+</html>
